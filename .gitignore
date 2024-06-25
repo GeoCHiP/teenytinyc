@@ -1,0 +1,5 @@
+obj/
+.cache/
+
+teenytinyc
+compile_commands.json
