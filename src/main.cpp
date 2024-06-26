@@ -3,13 +3,12 @@
 #include "Lexer.hpp"
 
 int main() {
-    std::string source = "+- */";
+    std::string source = "+- # This is a comment!\n */";
     Lexer lexer{source};
 
     std::optional<Token> result = lexer.GetToken();
     while (result.has_value() && result.value().Kind != TokenType::Eof) {
-        std::visit([](auto &&value) { std::cout << value << '\n'; },
-                   result.value().Value);
+        std::cout << TokenTypeToString(result.value().Kind) << '\n';
         result = lexer.GetToken();
     }
 }
