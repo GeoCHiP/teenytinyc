@@ -49,12 +49,17 @@ std::optional<TokenType> Lexer::CheckIfKeyword(const std::string &str) {
     return std::nullopt;
 }
 
-Lexer::Lexer(const std::string &source) : m_Source(source + "\n") {
+Lexer::Lexer(const std::string &source) : m_Source(source) {
+    if (m_Source.back() != '\n') {
+        m_Source += '\n';
+    }
     m_CurrentChar = m_Source[m_CurrentPosition];
 }
 
 Lexer::Lexer(std::string &&source) : m_Source(std::move(source)) {
-    m_Source += "\n";
+    if (m_Source.back() != '\n') {
+        m_Source += '\n';
+    }
     m_CurrentChar = m_Source[m_CurrentPosition];
 }
 
