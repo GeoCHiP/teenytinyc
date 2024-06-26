@@ -1,6 +1,7 @@
 #include <fstream>
 #include <iostream>
 
+#include "Emitter.hpp"
 #include "Lexer.hpp"
 #include "Parser.hpp"
 
@@ -35,11 +36,16 @@ int main(int argc, char **argv) {
     }
 
     Lexer lexer{source.value()};
-    Parser parser{lexer};
+    Emitter emitter{"out.c"};
+    Parser parser{lexer, emitter};
 
     try {
         parser.Program();
     } catch (const std::exception &e) {
+        std::cerr << argv[1] << ": ";
         std::cerr << e.what() << '\n';
+        return 1;
     }
+
+    emitter.WriteFile();
 }

@@ -2,11 +2,12 @@
 
 #include <unordered_set>
 
+#include "Emitter.hpp"
 #include "Lexer.hpp"
 
 class Parser {
 public:
-    Parser(Lexer &lexer);
+    Parser(Lexer &lexer, Emitter &emitter);
 
     bool CheckToken(TokenType kind) noexcept;
 
@@ -36,6 +37,7 @@ public:
 
 private:
     Lexer &m_Lexer;
+    Emitter &m_Emitter;
     Token m_CurrentToken;
     Token m_PeekToken;
     std::unordered_set<std::string> m_Symbols;

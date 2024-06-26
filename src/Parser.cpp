@@ -2,10 +2,10 @@
 #include <sstream>
 #include <stdexcept>
 
-#include "Lexer.hpp"
 #include "Parser.hpp"
 
-Parser::Parser(Lexer &lexer) : m_Lexer{lexer} {
+Parser::Parser(Lexer &lexer, Emitter &emitter)
+    : m_Lexer{lexer}, m_Emitter(emitter) {
     NextToken();
     NextToken();
 }
@@ -35,7 +35,8 @@ void Parser::NextToken() noexcept {
 }
 
 void Parser::Program() {
-    std::cerr << "PROGRAM\n";
+    m_Emitter.HeaderLine("#include <stdio.h>");
+    m_Emitter.HeaderLine("int main() {");
 
     while (CheckToken(TokenType::Newline)) {
         NextToken();
@@ -44,6 +45,9 @@ void Parser::Program() {
     while (!CheckToken(TokenType::Eof)) {
         Statement();
     }
+
+    m_Emitter.EmitLine("return 0;");
+    m_Emitter.EmitLine("}");
 
     for (const std::string &label : m_LabelsGotoed) {
         if (m_LabelsDeclared.find(label) == m_LabelsDeclared.end()) {
@@ -56,42 +60,52 @@ void Parser::Program() {
 
 void Parser::Statement() {
     if (CheckToken(TokenType::Print)) {
-        std::cerr << "STATEMENT-PRINT\n";
         NextToken();
         if (CheckToken(TokenType::String)) {
-            // do something with m_CurrentToken
+            m_Emitter.Emit("printf(\"");
+            m_Emitter.Emit(m_CurrentToken.Value);
+            m_Emitter.EmitLine("\\n\");");
             NextToken();
         } else {
+            m_Emitter.Emit("printf(\"%.2f\\n\", (float)(");
             Expression();
+            m_Emitter.EmitLine("));");
         }
     } else if (CheckToken(TokenType::If)) {
-        std::cerr << "STATEMENT-IF\n";
         NextToken();
+
+        m_Emitter.Emit("if (");
         Comparison();
 
         Match(TokenType::Then);
         Newline();
+
+        m_Emitter.EmitLine(") {");
 
         while (!CheckToken(TokenType::Endif)) {
             Statement();
         }
 
         Match(TokenType::Endif);
+
+        m_Emitter.EmitLine("}");
     } else if (CheckToken(TokenType::While)) {
-        std::cerr << "STATEMENT-WHILE\n";
         NextToken();
+
+        m_Emitter.Emit("while (");
         Comparison();
 
         Match(TokenType::Repeat);
         Newline();
+        m_Emitter.EmitLine(") {");
 
         while (!CheckToken(TokenType::Endwhile)) {
             Statement();
         }
 
         Match(TokenType::Endwhile);
+        m_Emitter.EmitLine("}");
     } else if (CheckToken(TokenType::Label)) {
-        std::cerr << "STATEMENT-LABEL\n";
         NextToken();
 
         if (m_LabelsDeclared.find(m_CurrentToken.Value) !=
@@ -100,28 +114,58 @@ void Parser::Statement() {
             ss << "Label already exists: " << m_CurrentToken.Value;
             throw std::runtime_error(ss.str());
         }
-
         m_LabelsDeclared.insert(m_CurrentToken.Value);
+
+        m_Emitter.Emit(m_CurrentToken.Value);
+        m_Emitter.EmitLine(":");
+
         Match(TokenType::Ident);
     } else if (CheckToken(TokenType::Goto)) {
-        std::cerr << "STATEMENT-GOTO\n";
         NextToken();
         m_LabelsGotoed.insert(m_CurrentToken.Value);
+
+        m_Emitter.Emit("goto ");
+        m_Emitter.Emit(m_CurrentToken.Value);
+        m_Emitter.EmitLine(";");
+
         Match(TokenType::Ident);
     } else if (CheckToken(TokenType::Let)) {
-        std::cerr << "STATEMENT-LET\n";
         NextToken();
 
-        m_Symbols.insert(m_CurrentToken.Value);
+        if (m_Symbols.find(m_CurrentToken.Value) == m_Symbols.end()) {
+            m_Symbols.insert(m_CurrentToken.Value);
+            m_Emitter.Header("float ");
+            m_Emitter.Header(m_CurrentToken.Value);
+            m_Emitter.HeaderLine(";");
+        }
+
+        m_Emitter.Emit(m_CurrentToken.Value);
+        m_Emitter.Emit(" = ");
 
         Match(TokenType::Ident);
         Match(TokenType::Eq);
+
         Expression();
+
+        m_Emitter.EmitLine(";");
     } else if (CheckToken(TokenType::Input)) {
-        std::cerr << "STATEMENT-INPUT\n";
         NextToken();
 
-        m_Symbols.insert(m_CurrentToken.Value);
+        if (m_Symbols.find(m_CurrentToken.Value) == m_Symbols.end()) {
+            m_Symbols.insert(m_CurrentToken.Value);
+            m_Emitter.Header("float ");
+            m_Emitter.Header(m_CurrentToken.Value);
+            m_Emitter.HeaderLine(";");
+        }
+
+        m_Emitter.Emit("if (0 == scanf(\"%f\", &");
+        m_Emitter.Emit(m_CurrentToken.Value);
+        m_Emitter.EmitLine(")) {");
+
+        m_Emitter.Emit(m_CurrentToken.Value);
+        m_Emitter.EmitLine(" = 0;");
+        m_Emitter.EmitLine("scanf(\"%*s\");");
+        m_Emitter.EmitLine("}");
 
         Match(TokenType::Ident);
     } else {
@@ -134,29 +178,26 @@ void Parser::Statement() {
 }
 
 void Parser::Expression() {
-    std::cerr << "EXPRESSION\n";
-
     Term();
     while (CheckToken(TokenType::Plus) || CheckToken(TokenType::Minus)) {
+        m_Emitter.Emit(m_CurrentToken.Value);
         NextToken();
         Term();
     }
 }
 
 void Parser::Term() {
-    std::cerr << "TERM\n";
-
     Unary();
     while (CheckToken(TokenType::Asterisk) || CheckToken(TokenType::Slash)) {
+        m_Emitter.Emit(m_CurrentToken.Value);
         NextToken();
         Unary();
     }
 }
 
 void Parser::Unary() {
-    std::cerr << "UNARY\n";
-
     if (CheckToken(TokenType::Plus) || CheckToken(TokenType::Minus)) {
+        m_Emitter.Emit(m_CurrentToken.Value);
         NextToken();
     }
 
@@ -164,9 +205,8 @@ void Parser::Unary() {
 }
 
 void Parser::Primary() {
-    std::cerr << "PRIMARY (" << m_CurrentToken.Value << ")\n";
-
     if (CheckToken(TokenType::Number)) {
+        m_Emitter.Emit(m_CurrentToken.Value);
         NextToken();
     } else if (CheckToken(TokenType::Ident)) {
         if (m_Symbols.find(m_CurrentToken.Value) == m_Symbols.end()) {
@@ -175,6 +215,7 @@ void Parser::Primary() {
                << m_CurrentToken.Value;
             throw std::runtime_error(ss.str());
         }
+        m_Emitter.Emit(m_CurrentToken.Value);
         NextToken();
     } else {
         std::stringstream ss;
@@ -184,7 +225,6 @@ void Parser::Primary() {
 }
 
 void Parser::Newline() noexcept {
-    std::cerr << "NEWLINE\n";
     Match(TokenType::Newline);
     while (CheckToken(TokenType::Newline)) {
         NextToken();
@@ -192,10 +232,9 @@ void Parser::Newline() noexcept {
 }
 
 void Parser::Comparison() {
-    std::cerr << "COMPARISON\n";
-
     Expression();
     if (IsComparisonOperator()) {
+        m_Emitter.Emit(m_CurrentToken.Value);
         NextToken();
         Expression();
     } else {
@@ -206,6 +245,7 @@ void Parser::Comparison() {
     }
 
     while (IsComparisonOperator()) {
+        m_Emitter.Emit(m_CurrentToken.Value);
         NextToken();
         Expression();
     }
