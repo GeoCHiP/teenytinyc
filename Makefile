@@ -21,5 +21,6 @@ $(OBJDIR):
 
 clean:
 	rm -rf $(OBJDIR) $(EXE)
+	./clean.sh
 
 .PHONY: clean all
