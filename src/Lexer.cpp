@@ -71,6 +71,26 @@ std::optional<Token> Lexer::GetToken() noexcept {
 
     Token token{m_CurrentChar, TokenType::Eof};
 
+    if (std::isdigit(m_CurrentChar)) {
+        size_t startPos = m_CurrentPosition;
+        while (std::isdigit(m_CurrentChar)) {
+            NextChar();
+        }
+        if (m_CurrentChar == '.') {
+            NextChar();
+            if (!std::isdigit(m_CurrentChar)) {
+                std::cerr << "Illegal character in number.\n";
+                return std::nullopt;
+            }
+            while (std::isdigit(m_CurrentChar)) {
+                NextChar();
+            }
+        }
+        token.Kind = TokenType::Number;
+        token.Value = m_Source.substr(startPos, m_CurrentPosition - startPos);
+        return token;
+    }
+
     switch (m_CurrentChar) {
     case '+':
         token.Kind = TokenType::Plus;
