@@ -1,0 +1,2 @@
+LET bar = 42
+LET foo = bar * 3 + 2

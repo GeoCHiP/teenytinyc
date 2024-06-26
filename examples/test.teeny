@@ -1,0 +1,2 @@
+LET someVar = 42
+PRINT someVar + 42
