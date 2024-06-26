@@ -83,6 +83,42 @@ std::optional<Token> Lexer::GetToken() noexcept {
     case '/':
         token.Kind = TokenType::Slash;
         break;
+    case '=':
+        if (Peek() == '=') {
+            token.Value = "==";
+            token.Kind = TokenType::Eqeq;
+            NextChar();
+        } else {
+            token.Kind = TokenType::Eq;
+        }
+        break;
+    case '>':
+        if (Peek() == '=') {
+            token.Value = ">=";
+            token.Kind = TokenType::Gteq;
+            NextChar();
+        } else {
+            token.Kind = TokenType::Gt;
+        }
+        break;
+    case '<':
+        if (Peek() == '=') {
+            token.Value = "<=";
+            token.Kind = TokenType::Lteq;
+            NextChar();
+        } else {
+            token.Kind = TokenType::Lt;
+        }
+        break;
+    case '!':
+        if (Peek() == '=') {
+            token.Value = "!=";
+            token.Kind = TokenType::Noteq;
+            NextChar();
+        } else {
+            return std::nullopt;
+        }
+        break;
     case '\n':
         token.Kind = TokenType::Newline;
         break;
