@@ -40,7 +40,7 @@ const char *TokenTypeToString(TokenType t) {
     return s_TokenTypeNames.at(t);
 }
 
-std::optional<TokenType> CheckIfKeyword(const std::string &str) {
+std::optional<TokenType> Lexer::CheckIfKeyword(const std::string &str) {
     for (const auto &[tokenType, tokenName] : s_TokenTypeNames) {
         if (tokenName == str) {
             return tokenType;
