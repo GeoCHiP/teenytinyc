@@ -1,4 +1,5 @@
 #include <cctype>
+#include <iostream>
 #include <unordered_map>
 
 #include "Lexer.hpp"
@@ -116,6 +117,7 @@ std::optional<Token> Lexer::GetToken() noexcept {
             token.Kind = TokenType::Noteq;
             NextChar();
         } else {
+            std::cerr << "Expected !=, got !" << Peek() << '\n';
             return std::nullopt;
         }
         break;
@@ -126,6 +128,7 @@ std::optional<Token> Lexer::GetToken() noexcept {
         token.Kind = TokenType::Eof;
         break;
     default:
+        std::cerr << "Unknown token: " << m_CurrentChar << '\n';
         return std::nullopt;
         break;
     }
