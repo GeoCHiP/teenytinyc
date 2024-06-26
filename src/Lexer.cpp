@@ -1,6 +1,43 @@
 #include <cctype>
+#include <unordered_map>
 
 #include "Lexer.hpp"
+
+static const std::unordered_map<TokenType, const char *> s_TokenTypeNames = {
+    {TokenType::Eof, "end of file"},
+    {TokenType::Newline, "newline"},
+    {TokenType::Number, "number"},
+    {TokenType::Ident, "ident"},
+    {TokenType::String, "string"},
+    // Keywords.
+    {TokenType::Label, "label"},
+    {TokenType::Goto, "goto"},
+    {TokenType::Print, "print"},
+    {TokenType::Input, "input"},
+    {TokenType::Let, "let"},
+    {TokenType::If, "if"},
+    {TokenType::Then, "then"},
+    {TokenType::Endif, "endif"},
+    {TokenType::While, "while"},
+    {TokenType::Repeat, "repeat"},
+    {TokenType::Endwhile, "endwhile"},
+    // Operators.
+    {TokenType::Eq, "eq"},
+    {TokenType::Plus, "plus"},
+    {TokenType::Minus, "minus"},
+    {TokenType::Asterisk, "asterisk"},
+    {TokenType::Slash, "slash"},
+    {TokenType::Eqeq, "eqeq"},
+    {TokenType::Noteq, "noteq"},
+    {TokenType::Lt, "lt"},
+    {TokenType::Lteq, "lteq"},
+    {TokenType::Gt, "gt"},
+    {TokenType::Gteq, "gteq"},
+};
+
+const char *TokenTypeToString(TokenType t) {
+    return s_TokenTypeNames.at(t);
+}
 
 Lexer::Lexer(const std::string &source) : m_Source(source + "\n") {
     m_CurrentChar = source[m_CurrentPosition];

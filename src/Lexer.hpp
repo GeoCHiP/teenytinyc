@@ -34,6 +34,8 @@ enum class TokenType {
     Gteq = 211,
 };
 
+const char *TokenTypeToString(TokenType t);
+
 struct Token {
     std::variant<std::string, int, char> Value;
     TokenType Kind;
