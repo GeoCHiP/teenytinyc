@@ -69,7 +69,7 @@ std::optional<Token> Lexer::GetToken() noexcept {
     SkipWhitespace();
     SkipComment();
 
-    Token token{m_CurrentChar, TokenType::Eof};
+    Token token{std::string{m_CurrentChar}, TokenType::Eof};
 
     if (std::isdigit(m_CurrentChar)) {
         size_t startPos = m_CurrentPosition;

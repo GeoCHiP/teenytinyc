@@ -1,6 +1,5 @@
 #include <optional>
 #include <string>
-#include <variant>
 
 enum class TokenType {
     Eof = -1,
@@ -37,7 +36,7 @@ enum class TokenType {
 const char *TokenTypeToString(TokenType t);
 
 struct Token {
-    std::variant<std::string, int, char> Value;
+    std::string Value;
     TokenType Kind;
 };
 
