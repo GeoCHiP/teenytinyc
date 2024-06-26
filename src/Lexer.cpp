@@ -141,6 +141,22 @@ std::optional<Token> Lexer::GetToken() noexcept {
             return std::nullopt;
         }
         break;
+    case '"': {
+        NextChar();
+        size_t startPos = m_CurrentPosition;
+        while (m_CurrentChar != '"') {
+            if (m_CurrentChar == '\r' || m_CurrentChar == '\n' ||
+                m_CurrentChar == '\t' || m_CurrentChar == '\\' ||
+                m_CurrentChar == '%') {
+                std::cerr << "Illegal character in string.\n";
+                return std::nullopt;
+            }
+            NextChar();
+        }
+        token.Kind = TokenType::String;
+        token.Value = m_Source.substr(startPos, m_CurrentPosition - startPos);
+        break;
+    }
     case '\n':
         token.Kind = TokenType::Newline;
         break;
