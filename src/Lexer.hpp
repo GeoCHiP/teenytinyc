@@ -35,6 +35,8 @@ enum class TokenType {
 
 const char *TokenTypeToString(TokenType t);
 
+std::optional<TokenType> CheckIfKeyword(const std::string &str);
+
 struct Token {
     std::string Value;
     TokenType Kind;

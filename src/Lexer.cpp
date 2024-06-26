@@ -40,6 +40,15 @@ const char *TokenTypeToString(TokenType t) {
     return s_TokenTypeNames.at(t);
 }
 
+std::optional<TokenType> CheckIfKeyword(const std::string &str) {
+    for (const auto &[tokenType, tokenName] : s_TokenTypeNames) {
+        if (tokenName == str) {
+            return tokenType;
+        }
+    }
+    return std::nullopt;
+}
+
 Lexer::Lexer(const std::string &source) : m_Source(source + "\n") {
     m_CurrentChar = source[m_CurrentPosition];
 }
@@ -88,6 +97,18 @@ std::optional<Token> Lexer::GetToken() noexcept {
         }
         token.Kind = TokenType::Number;
         token.Value = m_Source.substr(startPos, m_CurrentPosition - startPos);
+        return token;
+    }
+
+    if (std::isalpha(m_CurrentChar)) {
+        size_t startPos = m_CurrentPosition;
+        NextChar();
+        while (std::isalnum(m_CurrentChar)) {
+            NextChar();
+        }
+        token.Value = m_Source.substr(startPos, m_CurrentPosition - startPos);
+        std::optional<TokenType> keyword = CheckIfKeyword(token.Value);
+        token.Kind = keyword.value_or(TokenType::Ident);
         return token;
     }
 
