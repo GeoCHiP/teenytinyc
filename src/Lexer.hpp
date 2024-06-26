@@ -50,7 +50,7 @@ public:
 
     void Abort(const std::string &message);
 
-    void SkipWhitespace();
+    void SkipWhitespace() noexcept;
 
     void SkipComment();
 

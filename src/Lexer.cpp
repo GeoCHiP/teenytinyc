@@ -1,3 +1,5 @@
+#include <cctype>
+
 #include "Lexer.hpp"
 
 Lexer::Lexer(const std::string &source) : m_Source(source + "\n") {
@@ -26,6 +28,8 @@ char Lexer::Peek() noexcept {
 }
 
 std::optional<Token> Lexer::GetToken() noexcept {
+    SkipWhitespace();
+
     Token token{m_CurrentChar, TokenType::Eof};
 
     switch (m_CurrentChar) {
@@ -54,4 +58,10 @@ std::optional<Token> Lexer::GetToken() noexcept {
 
     NextChar();
     return token;
+}
+
+void Lexer::SkipWhitespace() noexcept {
+    while (std::isspace(m_CurrentChar) && m_CurrentChar != '\n') {
+        NextChar();
+    }
 }
