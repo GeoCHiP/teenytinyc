@@ -29,6 +29,7 @@ char Lexer::Peek() noexcept {
 
 std::optional<Token> Lexer::GetToken() noexcept {
     SkipWhitespace();
+    SkipComment();
 
     Token token{m_CurrentChar, TokenType::Eof};
 
@@ -63,5 +64,13 @@ std::optional<Token> Lexer::GetToken() noexcept {
 void Lexer::SkipWhitespace() noexcept {
     while (std::isspace(m_CurrentChar) && m_CurrentChar != '\n') {
         NextChar();
+    }
+}
+
+void Lexer::SkipComment() noexcept {
+    if (m_CurrentChar == '#') {
+        while (m_CurrentChar != '\n') {
+            NextChar();
+        }
     }
 }

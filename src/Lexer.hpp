@@ -52,7 +52,7 @@ public:
 
     void SkipWhitespace() noexcept;
 
-    void SkipComment();
+    void SkipComment() noexcept;
 
     std::optional<Token> GetToken() noexcept;
 
