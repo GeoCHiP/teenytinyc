@@ -50,12 +50,12 @@ std::optional<TokenType> Lexer::CheckIfKeyword(const std::string &str) {
 }
 
 Lexer::Lexer(const std::string &source) : m_Source(source + "\n") {
-    m_CurrentChar = source[m_CurrentPosition];
+    m_CurrentChar = m_Source[m_CurrentPosition];
 }
 
 Lexer::Lexer(std::string &&source) : m_Source(std::move(source)) {
     m_Source += "\n";
-    m_CurrentChar = source[m_CurrentPosition];
+    m_CurrentChar = m_Source[m_CurrentPosition];
 }
 
 void Lexer::NextChar() noexcept {
