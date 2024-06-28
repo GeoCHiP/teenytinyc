@@ -35,11 +35,11 @@ enum class TokenType {
     Gteq = 211,
 };
 
-const char *TokenTypeToString(TokenType t);
+const char *token_type_to_string(TokenType t);
 
 struct Token {
-    std::string Value;
-    TokenType Kind;
+    std::string value;
+    TokenType kind;
 };
 
 class Lexer {
@@ -47,22 +47,22 @@ public:
     explicit Lexer(const std::string &source);
     explicit Lexer(std::string &&source);
 
-    void NextChar() noexcept;
+    void next_char() noexcept;
 
-    char Peek() noexcept;
+    char peek() noexcept;
 
-    void Abort(const std::string &message);
+    void abort(const std::string &message);
 
-    void SkipWhitespace() noexcept;
+    void skip_whitespace() noexcept;
 
-    void SkipComment() noexcept;
+    void skip_comment() noexcept;
 
-    std::optional<Token> GetToken() noexcept;
+    std::optional<Token> get_token() noexcept;
 
-    static std::optional<TokenType> CheckIfKeyword(const std::string &str);
+    static std::optional<TokenType> check_if_keyword(const std::string &str);
 
 private:
-    std::string m_Source;
-    char m_CurrentChar = '\0';
-    size_t m_CurrentPosition = 0;
+    std::string m_source;
+    char m_current_char = '\0';
+    size_t m_current_position = 0;
 };

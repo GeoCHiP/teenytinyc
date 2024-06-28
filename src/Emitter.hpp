@@ -7,18 +7,18 @@ class Emitter {
 public:
     Emitter(const std::string &outputPath);
 
-    void Emit(std::string_view code) noexcept;
+    void emit(std::string_view code) noexcept;
 
-    void EmitLine(std::string_view code) noexcept;
+    void emit_line(std::string_view code) noexcept;
 
-    void Header(std::string_view code) noexcept;
+    void header(std::string_view code) noexcept;
 
-    void HeaderLine(std::string_view code) noexcept;
+    void header_line(std::string_view code) noexcept;
 
-    void WriteFile() noexcept;
+    void write_file() noexcept;
 
 private:
-    std::string m_OutputPath;
-    std::string m_Header;
-    std::string m_Code;
+    std::string m_output_path;
+    std::string m_header;
+    std::string m_code;
 };

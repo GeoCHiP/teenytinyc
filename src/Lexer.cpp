@@ -4,7 +4,7 @@
 
 #include "Lexer.hpp"
 
-static const std::unordered_map<TokenType, const char *> s_TokenTypeNames = {
+static const std::unordered_map<TokenType, const char *> s_token_type_names = {
     {TokenType::Eof, "end of file"},
     {TokenType::Newline, "newline"},
     {TokenType::Number, "number"},
@@ -36,179 +36,184 @@ static const std::unordered_map<TokenType, const char *> s_TokenTypeNames = {
     {TokenType::Gteq, "gteq"},
 };
 
-const char *TokenTypeToString(TokenType t) {
-    return s_TokenTypeNames.at(t);
+const char *token_type_to_string(TokenType t) {
+    return s_token_type_names.at(t);
 }
 
-std::optional<TokenType> Lexer::CheckIfKeyword(const std::string &str) {
-    for (const auto &[tokenType, tokenName] : s_TokenTypeNames) {
-        if (tokenName == str) {
-            return tokenType;
+std::optional<TokenType> Lexer::check_if_keyword(const std::string &str) {
+    for (const auto &[token_type, token_name] : s_token_type_names) {
+        if (token_name == str) {
+            return token_type;
         }
     }
     return std::nullopt;
 }
 
-Lexer::Lexer(const std::string &source) : m_Source(source) {
-    if (m_Source.back() != '\n') {
-        m_Source += '\n';
+Lexer::Lexer(const std::string &source) : m_source(source) {
+    if (m_source.back() != '\n') {
+        m_source += '\n';
     }
-    m_CurrentChar = m_Source[m_CurrentPosition];
+    m_current_char = m_source[m_current_position];
 }
 
-Lexer::Lexer(std::string &&source) : m_Source(std::move(source)) {
-    if (m_Source.back() != '\n') {
-        m_Source += '\n';
+Lexer::Lexer(std::string &&source) : m_source(std::move(source)) {
+    if (m_source.back() != '\n') {
+        m_source += '\n';
     }
-    m_CurrentChar = m_Source[m_CurrentPosition];
+    m_current_char = m_source[m_current_position];
 }
 
-void Lexer::NextChar() noexcept {
-    m_CurrentPosition += 1;
-    if (m_CurrentPosition >= m_Source.size()) {
-        m_CurrentChar = '\0';
+void Lexer::next_char() noexcept {
+    m_current_position += 1;
+    if (m_current_position >= m_source.size()) {
+        m_current_char = '\0';
     } else {
-        m_CurrentChar = m_Source[m_CurrentPosition];
+        m_current_char = m_source[m_current_position];
     }
 }
 
-char Lexer::Peek() noexcept {
-    if (m_CurrentPosition + 1 >= m_Source.size()) {
+char Lexer::peek() noexcept {
+    if (m_current_position + 1 >= m_source.size()) {
         return '\0';
     }
-    return m_Source[m_CurrentPosition + 1];
+    return m_source[m_current_position + 1];
 }
 
-std::optional<Token> Lexer::GetToken() noexcept {
-    SkipWhitespace();
-    SkipComment();
+std::optional<Token> Lexer::get_token() noexcept {
+    skip_whitespace();
+    skip_comment();
 
-    Token token{std::string{m_CurrentChar}, TokenType::Eof};
+    Token token{
+        .value = std::string{m_current_char},
+        .kind = TokenType::Eof,
+    };
 
-    if (std::isdigit(m_CurrentChar)) {
-        size_t startPos = m_CurrentPosition;
-        while (std::isdigit(m_CurrentChar)) {
-            NextChar();
+    if (std::isdigit(m_current_char)) {
+        size_t start_pos = m_current_position;
+        while (std::isdigit(m_current_char)) {
+            next_char();
         }
-        if (m_CurrentChar == '.') {
-            NextChar();
-            if (!std::isdigit(m_CurrentChar)) {
+        if (m_current_char == '.') {
+            next_char();
+            if (!std::isdigit(m_current_char)) {
                 std::cerr << "Illegal character in number.\n";
                 return std::nullopt;
             }
-            while (std::isdigit(m_CurrentChar)) {
-                NextChar();
+            while (std::isdigit(m_current_char)) {
+                next_char();
             }
         }
-        token.Kind = TokenType::Number;
-        token.Value = m_Source.substr(startPos, m_CurrentPosition - startPos);
+        token.kind = TokenType::Number;
+        token.value =
+            m_source.substr(start_pos, m_current_position - start_pos);
         return token;
     }
 
-    if (std::isalpha(m_CurrentChar)) {
-        size_t startPos = m_CurrentPosition;
-        NextChar();
-        while (std::isalnum(m_CurrentChar)) {
-            NextChar();
+    if (std::isalpha(m_current_char)) {
+        size_t startPos = m_current_position;
+        next_char();
+        while (std::isalnum(m_current_char)) {
+            next_char();
         }
-        token.Value = m_Source.substr(startPos, m_CurrentPosition - startPos);
-        std::optional<TokenType> keyword = CheckIfKeyword(token.Value);
-        token.Kind = keyword.value_or(TokenType::Ident);
+        token.value = m_source.substr(startPos, m_current_position - startPos);
+        std::optional<TokenType> keyword = check_if_keyword(token.value);
+        token.kind = keyword.value_or(TokenType::Ident);
         return token;
     }
 
-    switch (m_CurrentChar) {
+    switch (m_current_char) {
     case '+':
-        token.Kind = TokenType::Plus;
+        token.kind = TokenType::Plus;
         break;
     case '-':
-        token.Kind = TokenType::Minus;
+        token.kind = TokenType::Minus;
         break;
     case '*':
-        token.Kind = TokenType::Asterisk;
+        token.kind = TokenType::Asterisk;
         break;
     case '/':
-        token.Kind = TokenType::Slash;
+        token.kind = TokenType::Slash;
         break;
     case '=':
-        if (Peek() == '=') {
-            token.Value = "==";
-            token.Kind = TokenType::Eqeq;
-            NextChar();
+        if (peek() == '=') {
+            token.value = "==";
+            token.kind = TokenType::Eqeq;
+            next_char();
         } else {
-            token.Kind = TokenType::Eq;
+            token.kind = TokenType::Eq;
         }
         break;
     case '>':
-        if (Peek() == '=') {
-            token.Value = ">=";
-            token.Kind = TokenType::Gteq;
-            NextChar();
+        if (peek() == '=') {
+            token.value = ">=";
+            token.kind = TokenType::Gteq;
+            next_char();
         } else {
-            token.Kind = TokenType::Gt;
+            token.kind = TokenType::Gt;
         }
         break;
     case '<':
-        if (Peek() == '=') {
-            token.Value = "<=";
-            token.Kind = TokenType::Lteq;
-            NextChar();
+        if (peek() == '=') {
+            token.value = "<=";
+            token.kind = TokenType::Lteq;
+            next_char();
         } else {
-            token.Kind = TokenType::Lt;
+            token.kind = TokenType::Lt;
         }
         break;
     case '!':
-        if (Peek() == '=') {
-            token.Value = "!=";
-            token.Kind = TokenType::Noteq;
-            NextChar();
+        if (peek() == '=') {
+            token.value = "!=";
+            token.kind = TokenType::Noteq;
+            next_char();
         } else {
-            std::cerr << "Expected !=, got !" << Peek() << '\n';
+            std::cerr << "Expected !=, got !" << peek() << '\n';
             return std::nullopt;
         }
         break;
     case '"': {
-        NextChar();
-        size_t startPos = m_CurrentPosition;
-        while (m_CurrentChar != '"') {
-            if (m_CurrentChar == '\r' || m_CurrentChar == '\n' ||
-                m_CurrentChar == '\t' || m_CurrentChar == '\\' ||
-                m_CurrentChar == '%') {
+        next_char();
+        size_t start_pos = m_current_position;
+        while (m_current_char != '"') {
+            if (m_current_char == '\r' || m_current_char == '\n' ||
+                m_current_char == '\t' || m_current_char == '\\' ||
+                m_current_char == '%') {
                 std::cerr << "Illegal character in string.\n";
                 return std::nullopt;
             }
-            NextChar();
+            next_char();
         }
-        token.Kind = TokenType::String;
-        token.Value = m_Source.substr(startPos, m_CurrentPosition - startPos);
+        token.kind = TokenType::String;
+        token.value =
+            m_source.substr(start_pos, m_current_position - start_pos);
         break;
     }
     case '\n':
-        token.Kind = TokenType::Newline;
+        token.kind = TokenType::Newline;
         break;
     case '\0':
-        token.Kind = TokenType::Eof;
+        token.kind = TokenType::Eof;
         break;
     default:
-        std::cerr << "Unknown token: " << m_CurrentChar << '\n';
+        std::cerr << "Unknown token: " << m_current_char << '\n';
         return std::nullopt;
         break;
     }
 
-    NextChar();
+    next_char();
     return token;
 }
 
-void Lexer::SkipWhitespace() noexcept {
-    while (std::isspace(m_CurrentChar) && m_CurrentChar != '\n') {
-        NextChar();
+void Lexer::skip_whitespace() noexcept {
+    while (std::isspace(m_current_char) && m_current_char != '\n') {
+        next_char();
     }
 }
 
-void Lexer::SkipComment() noexcept {
-    if (m_CurrentChar == '#') {
-        while (m_CurrentChar != '\n') {
-            NextChar();
+void Lexer::skip_comment() noexcept {
+    if (m_current_char == '#') {
+        while (m_current_char != '\n') {
+            next_char();
         }
     }
 }

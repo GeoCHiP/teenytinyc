@@ -5,52 +5,55 @@
 #include "Parser.hpp"
 
 Parser::Parser(Lexer &lexer, Emitter &emitter)
-    : m_Lexer{lexer}, m_Emitter(emitter) {
-    NextToken();
-    NextToken();
+    : m_lexer{lexer}, m_emitter(emitter) {
+    next_token();
+    next_token();
 }
 
-bool Parser::CheckToken(TokenType kind) noexcept {
-    return kind == m_CurrentToken.Kind;
+bool Parser::check_token(TokenType kind) noexcept {
+    return kind == m_current_token.kind;
 }
 
 bool Parser::CheckPeek(TokenType kind) noexcept {
-    return kind == m_PeekToken.Kind;
+    return kind == m_peek_token.kind;
 }
 
-void Parser::Match(TokenType kind) {
-    if (!CheckToken(kind)) {
+void Parser::match(TokenType kind) {
+    if (!check_token(kind)) {
         std::stringstream ss;
-        ss << "Expected " << TokenTypeToString(kind) << ", got"
-           << TokenTypeToString(m_CurrentToken.Kind);
+        ss << "Expected " << token_type_to_string(kind) << ", got"
+           << token_type_to_string(m_current_token.kind);
         throw std::runtime_error(ss.str());
     }
-    NextToken();
+    next_token();
 }
 
-void Parser::NextToken() noexcept {
-    std::optional<Token> token = m_Lexer.GetToken();
-    m_CurrentToken = m_PeekToken;
-    m_PeekToken = token.value_or(Token{"", TokenType::Eof});
+void Parser::next_token() noexcept {
+    std::optional<Token> token = m_lexer.get_token();
+    m_current_token = m_peek_token;
+    m_peek_token = token.value_or(Token{
+        .value = "",
+        .kind = TokenType::Eof,
+    });
 }
 
-void Parser::Program() {
-    m_Emitter.HeaderLine("#include <stdio.h>");
-    m_Emitter.HeaderLine("int main() {");
+void Parser::program() {
+    m_emitter.header_line("#include <stdio.h>");
+    m_emitter.header_line("int main() {");
 
-    while (CheckToken(TokenType::Newline)) {
-        NextToken();
+    while (check_token(TokenType::Newline)) {
+        next_token();
     }
 
-    while (!CheckToken(TokenType::Eof)) {
-        Statement();
+    while (!check_token(TokenType::Eof)) {
+        statement();
     }
 
-    m_Emitter.EmitLine("return 0;");
-    m_Emitter.EmitLine("}");
+    m_emitter.emit_line("return 0;");
+    m_emitter.emit_line("}");
 
-    for (const std::string &label : m_LabelsGotoed) {
-        if (m_LabelsDeclared.find(label) == m_LabelsDeclared.end()) {
+    for (const std::string &label : m_labels_gotoed) {
+        if (m_labels_declared.find(label) == m_labels_declared.end()) {
             std::stringstream ss;
             ss << "Attempting to GOTO to undeclared label: " << label;
             throw std::runtime_error(ss.str());
@@ -58,201 +61,201 @@ void Parser::Program() {
     }
 }
 
-void Parser::Statement() {
-    if (CheckToken(TokenType::Print)) {
-        NextToken();
-        if (CheckToken(TokenType::String)) {
-            m_Emitter.Emit("printf(\"");
-            m_Emitter.Emit(m_CurrentToken.Value);
-            m_Emitter.EmitLine("\\n\");");
-            NextToken();
+void Parser::statement() {
+    if (check_token(TokenType::Print)) {
+        next_token();
+        if (check_token(TokenType::String)) {
+            m_emitter.emit("printf(\"");
+            m_emitter.emit(m_current_token.value);
+            m_emitter.emit_line("\\n\");");
+            next_token();
         } else {
-            m_Emitter.Emit("printf(\"%.2f\\n\", (float)(");
-            Expression();
-            m_Emitter.EmitLine("));");
+            m_emitter.emit("printf(\"%.2f\\n\", (float)(");
+            expression();
+            m_emitter.emit_line("));");
         }
-    } else if (CheckToken(TokenType::If)) {
-        NextToken();
+    } else if (check_token(TokenType::If)) {
+        next_token();
 
-        m_Emitter.Emit("if (");
-        Comparison();
+        m_emitter.emit("if (");
+        comparison();
 
-        Match(TokenType::Then);
-        Newline();
+        match(TokenType::Then);
+        newline();
 
-        m_Emitter.EmitLine(") {");
+        m_emitter.emit_line(") {");
 
-        while (!CheckToken(TokenType::Endif)) {
-            Statement();
-        }
-
-        Match(TokenType::Endif);
-
-        m_Emitter.EmitLine("}");
-    } else if (CheckToken(TokenType::While)) {
-        NextToken();
-
-        m_Emitter.Emit("while (");
-        Comparison();
-
-        Match(TokenType::Repeat);
-        Newline();
-        m_Emitter.EmitLine(") {");
-
-        while (!CheckToken(TokenType::Endwhile)) {
-            Statement();
+        while (!check_token(TokenType::Endif)) {
+            statement();
         }
 
-        Match(TokenType::Endwhile);
-        m_Emitter.EmitLine("}");
-    } else if (CheckToken(TokenType::Label)) {
-        NextToken();
+        match(TokenType::Endif);
 
-        if (m_LabelsDeclared.find(m_CurrentToken.Value) !=
-            m_LabelsDeclared.end()) {
+        m_emitter.emit_line("}");
+    } else if (check_token(TokenType::While)) {
+        next_token();
+
+        m_emitter.emit("while (");
+        comparison();
+
+        match(TokenType::Repeat);
+        newline();
+        m_emitter.emit_line(") {");
+
+        while (!check_token(TokenType::Endwhile)) {
+            statement();
+        }
+
+        match(TokenType::Endwhile);
+        m_emitter.emit_line("}");
+    } else if (check_token(TokenType::Label)) {
+        next_token();
+
+        if (m_labels_declared.find(m_current_token.value) !=
+            m_labels_declared.end()) {
             std::stringstream ss;
-            ss << "Label already exists: " << m_CurrentToken.Value;
+            ss << "Label already exists: " << m_current_token.value;
             throw std::runtime_error(ss.str());
         }
-        m_LabelsDeclared.insert(m_CurrentToken.Value);
+        m_labels_declared.insert(m_current_token.value);
 
-        m_Emitter.Emit(m_CurrentToken.Value);
-        m_Emitter.EmitLine(":");
+        m_emitter.emit(m_current_token.value);
+        m_emitter.emit_line(":");
 
-        Match(TokenType::Ident);
-    } else if (CheckToken(TokenType::Goto)) {
-        NextToken();
-        m_LabelsGotoed.insert(m_CurrentToken.Value);
+        match(TokenType::Ident);
+    } else if (check_token(TokenType::Goto)) {
+        next_token();
+        m_labels_gotoed.insert(m_current_token.value);
 
-        m_Emitter.Emit("goto ");
-        m_Emitter.Emit(m_CurrentToken.Value);
-        m_Emitter.EmitLine(";");
+        m_emitter.emit("goto ");
+        m_emitter.emit(m_current_token.value);
+        m_emitter.emit_line(";");
 
-        Match(TokenType::Ident);
-    } else if (CheckToken(TokenType::Let)) {
-        NextToken();
+        match(TokenType::Ident);
+    } else if (check_token(TokenType::Let)) {
+        next_token();
 
-        if (m_Symbols.find(m_CurrentToken.Value) == m_Symbols.end()) {
-            m_Symbols.insert(m_CurrentToken.Value);
-            m_Emitter.Header("float ");
-            m_Emitter.Header(m_CurrentToken.Value);
-            m_Emitter.HeaderLine(";");
+        if (m_symbols.find(m_current_token.value) == m_symbols.end()) {
+            m_symbols.insert(m_current_token.value);
+            m_emitter.header("float ");
+            m_emitter.header(m_current_token.value);
+            m_emitter.header_line(";");
         }
 
-        m_Emitter.Emit(m_CurrentToken.Value);
-        m_Emitter.Emit(" = ");
+        m_emitter.emit(m_current_token.value);
+        m_emitter.emit(" = ");
 
-        Match(TokenType::Ident);
-        Match(TokenType::Eq);
+        match(TokenType::Ident);
+        match(TokenType::Eq);
 
-        Expression();
+        expression();
 
-        m_Emitter.EmitLine(";");
-    } else if (CheckToken(TokenType::Input)) {
-        NextToken();
+        m_emitter.emit_line(";");
+    } else if (check_token(TokenType::Input)) {
+        next_token();
 
-        if (m_Symbols.find(m_CurrentToken.Value) == m_Symbols.end()) {
-            m_Symbols.insert(m_CurrentToken.Value);
-            m_Emitter.Header("float ");
-            m_Emitter.Header(m_CurrentToken.Value);
-            m_Emitter.HeaderLine(";");
+        if (m_symbols.find(m_current_token.value) == m_symbols.end()) {
+            m_symbols.insert(m_current_token.value);
+            m_emitter.header("float ");
+            m_emitter.header(m_current_token.value);
+            m_emitter.header_line(";");
         }
 
-        m_Emitter.Emit("if (0 == scanf(\"%f\", &");
-        m_Emitter.Emit(m_CurrentToken.Value);
-        m_Emitter.EmitLine(")) {");
+        m_emitter.emit("if (0 == scanf(\"%f\", &");
+        m_emitter.emit(m_current_token.value);
+        m_emitter.emit_line(")) {");
 
-        m_Emitter.Emit(m_CurrentToken.Value);
-        m_Emitter.EmitLine(" = 0;");
-        m_Emitter.EmitLine("scanf(\"%*s\");");
-        m_Emitter.EmitLine("}");
+        m_emitter.emit(m_current_token.value);
+        m_emitter.emit_line(" = 0;");
+        m_emitter.emit_line("scanf(\"%*s\");");
+        m_emitter.emit_line("}");
 
-        Match(TokenType::Ident);
+        match(TokenType::Ident);
     } else {
         std::stringstream ss;
-        ss << "Invalid statement at " << m_CurrentToken.Value << " ("
-           << TokenTypeToString(m_CurrentToken.Kind) << ")";
+        ss << "Invalid statement at " << m_current_token.value << " ("
+           << token_type_to_string(m_current_token.kind) << ")";
         throw std::runtime_error(ss.str());
     }
-    Newline();
+    newline();
 }
 
-void Parser::Expression() {
-    Term();
-    while (CheckToken(TokenType::Plus) || CheckToken(TokenType::Minus)) {
-        m_Emitter.Emit(m_CurrentToken.Value);
-        NextToken();
-        Term();
+void Parser::expression() {
+    term();
+    while (check_token(TokenType::Plus) || check_token(TokenType::Minus)) {
+        m_emitter.emit(m_current_token.value);
+        next_token();
+        term();
     }
 }
 
-void Parser::Term() {
-    Unary();
-    while (CheckToken(TokenType::Asterisk) || CheckToken(TokenType::Slash)) {
-        m_Emitter.Emit(m_CurrentToken.Value);
-        NextToken();
-        Unary();
+void Parser::term() {
+    unary();
+    while (check_token(TokenType::Asterisk) || check_token(TokenType::Slash)) {
+        m_emitter.emit(m_current_token.value);
+        next_token();
+        unary();
     }
 }
 
-void Parser::Unary() {
-    if (CheckToken(TokenType::Plus) || CheckToken(TokenType::Minus)) {
-        m_Emitter.Emit(m_CurrentToken.Value);
-        NextToken();
+void Parser::unary() {
+    if (check_token(TokenType::Plus) || check_token(TokenType::Minus)) {
+        m_emitter.emit(m_current_token.value);
+        next_token();
     }
 
-    Primary();
+    primary();
 }
 
-void Parser::Primary() {
-    if (CheckToken(TokenType::Number)) {
-        m_Emitter.Emit(m_CurrentToken.Value);
-        NextToken();
-    } else if (CheckToken(TokenType::Ident)) {
-        if (m_Symbols.find(m_CurrentToken.Value) == m_Symbols.end()) {
+void Parser::primary() {
+    if (check_token(TokenType::Number)) {
+        m_emitter.emit(m_current_token.value);
+        next_token();
+    } else if (check_token(TokenType::Ident)) {
+        if (m_symbols.find(m_current_token.value) == m_symbols.end()) {
             std::stringstream ss;
             ss << "Referencing variable before assignment: "
-               << m_CurrentToken.Value;
+               << m_current_token.value;
             throw std::runtime_error(ss.str());
         }
-        m_Emitter.Emit(m_CurrentToken.Value);
-        NextToken();
+        m_emitter.emit(m_current_token.value);
+        next_token();
     } else {
         std::stringstream ss;
-        ss << "Unexpected token at " << m_CurrentToken.Value;
+        ss << "Unexpected token at " << m_current_token.value;
         throw std::runtime_error(ss.str());
     }
 }
 
-void Parser::Newline() noexcept {
-    Match(TokenType::Newline);
-    while (CheckToken(TokenType::Newline)) {
-        NextToken();
+void Parser::newline() noexcept {
+    match(TokenType::Newline);
+    while (check_token(TokenType::Newline)) {
+        next_token();
     }
 }
 
-void Parser::Comparison() {
-    Expression();
-    if (IsComparisonOperator()) {
-        m_Emitter.Emit(m_CurrentToken.Value);
-        NextToken();
-        Expression();
+void Parser::comparison() {
+    expression();
+    if (is_comparison_operator()) {
+        m_emitter.emit(m_current_token.value);
+        next_token();
+        expression();
     } else {
         std::stringstream ss;
-        ss << "Expected comparison operator at: " << m_CurrentToken.Value
-           << " (" << TokenTypeToString(m_CurrentToken.Kind) << ")";
+        ss << "Expected comparison operator at: " << m_current_token.value
+           << " (" << token_type_to_string(m_current_token.kind) << ")";
         throw std::runtime_error(ss.str());
     }
 
-    while (IsComparisonOperator()) {
-        m_Emitter.Emit(m_CurrentToken.Value);
-        NextToken();
-        Expression();
+    while (is_comparison_operator()) {
+        m_emitter.emit(m_current_token.value);
+        next_token();
+        expression();
     }
 }
 
-bool Parser::IsComparisonOperator() noexcept {
-    return CheckToken(TokenType::Eqeq) || CheckToken(TokenType::Noteq) ||
-           CheckToken(TokenType::Gt) || CheckToken(TokenType::Gteq) ||
-           CheckToken(TokenType::Lt) || CheckToken(TokenType::Lteq);
+bool Parser::is_comparison_operator() noexcept {
+    return check_token(TokenType::Eqeq) || check_token(TokenType::Noteq) ||
+           check_token(TokenType::Gt) || check_token(TokenType::Gteq) ||
+           check_token(TokenType::Lt) || check_token(TokenType::Lteq);
 }

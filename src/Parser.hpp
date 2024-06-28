@@ -9,38 +9,38 @@ class Parser {
 public:
     Parser(Lexer &lexer, Emitter &emitter);
 
-    bool CheckToken(TokenType kind) noexcept;
+    bool check_token(TokenType kind) noexcept;
 
     bool CheckPeek(TokenType kind) noexcept;
 
-    void Match(TokenType kind);
+    void match(TokenType kind);
 
-    void NextToken() noexcept;
+    void next_token() noexcept;
 
-    void Program();
+    void program();
 
-    void Statement();
+    void statement();
 
-    void Expression();
+    void expression();
 
-    void Term();
+    void term();
 
-    void Unary();
+    void unary();
 
-    void Primary();
+    void primary();
 
-    void Newline() noexcept;
+    void newline() noexcept;
 
-    void Comparison();
+    void comparison();
 
-    bool IsComparisonOperator() noexcept;
+    bool is_comparison_operator() noexcept;
 
 private:
-    Lexer &m_Lexer;
-    Emitter &m_Emitter;
-    Token m_CurrentToken;
-    Token m_PeekToken;
-    std::unordered_set<std::string> m_Symbols;
-    std::unordered_set<std::string> m_LabelsDeclared;
-    std::unordered_set<std::string> m_LabelsGotoed;
+    Lexer &m_lexer;
+    Emitter &m_emitter;
+    Token m_current_token;
+    Token m_peek_token;
+    std::unordered_set<std::string> m_symbols;
+    std::unordered_set<std::string> m_labels_declared;
+    std::unordered_set<std::string> m_labels_gotoed;
 };
